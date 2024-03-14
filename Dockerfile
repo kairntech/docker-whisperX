@@ -74,7 +74,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git=1:2.39.2-1.
 
 # Install requirements
 RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
-    pip install -U --extra-index-url https://download.pytorch.org/whl/cu118 \
+    pip install -U --extra-index-url https://download.pytorch.org/whl/cu122 \
     torch==2.1.1 torchaudio==2.1.1 pyannote.audio==3.1.1 pip
 
 RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
@@ -89,6 +89,12 @@ RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/r
     find "/root/.local" -name '*.pyc' -print0 | xargs -0 rm -f || true ; \
     find "/root/.local" -type d -name '__pycache__' -print0 | xargs -0 rm -rf || true ;
 
+# Install server
+RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
+    --mount=source=whisperx_server/requirements.txt,target=requirements.txt,rw \
+    pip install -r requirements.txt
+
+
 ######
 # Final stage for no_model
 ######
@@ -96,8 +102,8 @@ FROM base as no_model
 
 ARG UID
 
-RUN pip3.11 uninstall -y pip wheel && \
-    rm -rf /root/.cache/pip
+#RUN pip3.11 uninstall -y pip wheel && \
+#    rm -rf /root/.cache/pip
 
 # ffmpeg
 COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
@@ -113,6 +119,7 @@ COPY --chown=$UID:0 --chmod=775 \
     --from=build /root/.local /home/$UID/.local
 ENV PATH="/home/$UID/.local/bin:$PATH"
 ENV PYTHONPATH="${PYTHONPATH}:/home/$UID/.local/lib/python3.11/site-packages" 
+# ENV LD_LIBRAY_PATH="${LD_LIBRAY_PATH}:/home/$UID/.local/lib/python3.11/site-packages/nvidia/cublas/lib:/home/$UID/.local/lib/python3.11/site-packages/nvidia/cudnn/lib"
 
 RUN install -d -m 775 -o $UID -g 0 /licenses
 COPY --chmod=775 LICENSE /licenses/LICENSE
@@ -122,6 +129,7 @@ ARG CACHE_HOME
 ARG CONFIG_HOME
 ARG TORCH_HOME
 ARG HF_HOME
+ENV CACHE_HOME=${CACHE_HOME}
 ENV XDG_CACHE_HOME=${CACHE_HOME}
 ENV TORCH_HOME=${TORCH_HOME}
 ENV HF_HOME=${HF_HOME}
@@ -137,9 +145,10 @@ ENV LANG=
 USER $UID
 WORKDIR /app
 VOLUME [ "/app" ]
+COPY . /app
 
 STOPSIGNAL SIGINT
-ENTRYPOINT ["sh", "-c", "whisperx \"$@\""]
+# ENTRYPOINT ["sh", "-c", "whisperx \"$@\""]
 
 ######
 # load_whisper stage: This stage will be tagged for caching in CI.
@@ -168,7 +177,7 @@ ARG HF_HOME
 ARG LANG
 
 RUN --mount=source=load_align_model.py,target=load_align_model.py \
-    for i in ${LANG}; do echo "Aliging lang $i"; python3 load_align_model.py "$i"; done
+    for i in ${LANG}; do echo "Aligning lang $i"; python3 load_align_model.py "$i"; done
 
 ######
 # Final stage with model
@@ -177,9 +186,9 @@ FROM ${NO_MODEL_STAGE} as final
 
 ARG UID
 
-ARG CACHE_HOME
-COPY --link --chown=$UID:0 --chmod=775 \
-    --from=load_align ${CACHE_HOME} ${CACHE_HOME}
+#ARG CACHE_HOME
+#COPY --link --chown=$UID:0 --chmod=775 \
+#    --from=load_align ${CACHE_HOME} ${CACHE_HOME}
 
 ARG WHISPER_MODEL
 ENV WHISPER_MODEL=${WHISPER_MODEL}
@@ -187,4 +196,5 @@ ARG LANG
 ENV LANG=${LANG}
 
 # Take the first language from LANG env variable
-ENTRYPOINT ["sh", "-c", "LANG=$(echo ${LANG} | cut -d ' ' -f1); whisperx --model \"${WHISPER_MODEL}\" --language \"${LANG}\" \"$@\""]
+# ENTRYPOINT ["sh", "-c", "LANG=$(echo ${LANG} | cut -d ' ' -f1); whisperx --model \"${WHISPER_MODEL}\" --language \"${LANG}\" \"$@\""]
+CMD python3 whisperx_server/app.py

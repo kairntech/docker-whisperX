@@ -1,0 +1,7 @@
+plac
+fastapi
+uvicorn
+urllib3
+python-dateutil
+more-itertools
+python-multipart
