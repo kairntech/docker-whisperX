@@ -33,7 +33,7 @@ jobs:
           tag: ubi-no_model
 
       - name: Build:ubi-no_model
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         id: build
         with:
           context: .
@@ -42,10 +42,11 @@ jobs:
           target: no_model
           labels: ${{ steps.setup.outputs.labels }}
           build-args: |
-            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+            RELEASE=${{ github.run_number }}
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache,mode=max
 
       - name: Test ubi-no_model docker image
         run: |
@@ -63,7 +64,7 @@ jobs:
           echo "Test passed."
 
       - name: Build and push:ubi-no_model
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./ubi.Dockerfile
@@ -72,10 +73,11 @@ jobs:
           tags: ${{ steps.setup.outputs.tags }}
           labels: ${{ steps.setup.outputs.labels }}
           build-args: |
-            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+            RELEASE=${{ github.run_number }}
           platforms: linux/amd64, linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache,mode=max
 
   # Run the no_model build first ensure that the code at least builds
   docker-no_model:
@@ -97,7 +99,7 @@ jobs:
           token: ${{ secrets.CR_PAT }}
 
       - name: Build:no_model
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         id: build
         with:
           context: .
@@ -106,10 +108,11 @@ jobs:
           target: no_model
           labels: ${{ steps.setup.outputs.labels }}
           build-args: |
-            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+            RELEASE=${{ github.run_number }}
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache,mode=max
 
       - name: Test no_model docker image
         run: |
@@ -127,7 +130,7 @@ jobs:
           echo "Test passed."
 
       - name: Build and push:no_model
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         id: publish
         with:
           context: .
@@ -137,10 +140,11 @@ jobs:
           tags: ${{ steps.setup.outputs.tags }}
           labels: ${{ steps.setup.outputs.labels }}
           build-args: |
-            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+            RELEASE=${{ github.run_number }}
           platforms: linux/amd64, linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache,mode=max
 
   # Download whisper model cache
   docker-cache:
@@ -173,7 +177,7 @@ jobs:
           tag: cache-${{ matrix.model }}
 
       - name: Build cache:${{ matrix.model }}
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         id: build
         with:
           context: .
@@ -185,8 +189,11 @@ jobs:
           build-args: |
             WHISPER_MODEL=${{ matrix.model }}
             NO_MODEL_STAGE=ghcr.io/jim60105/whisperx:no_model@${{ needs.docker-no_model.outputs.digest }}
-            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+            RELEASE=${{ github.run_number }}
           platforms: linux/amd64, linux/arm64
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache,mode=max
 
   # Run the rest of the builds in parallel
   docker:
@@ -259,7 +266,7 @@ jobs:
           echo "id=$id" >> $GITHUB_OUTPUT
 
       - name: Build and push:${{ matrix.model }}-${{ matrix.lang }}
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
@@ -272,8 +279,11 @@ jobs:
             LANG=${{ matrix.lang }}
             LOAD_WHISPER_STAGE=ghcr.io/jim60105/whisperx:cache-${{ matrix.model }}-${{ steps.get-sha.outputs.id }}
             NO_MODEL_STAGE=ghcr.io/jim60105/whisperx:no_model@${{ needs.docker-no_model.outputs.digest }}
-            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+            RELEASE=${{ github.run_number }}
           platforms: linux/amd64, linux/arm64
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/whisperx:cache,mode=max
 
   test-large-v3-zh:
     name: Test large-v3-zh docker image
