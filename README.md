@@ -1,10 +1,9 @@
 # docker-whisperX
 
-[![CodeFactor](https://www.codefactor.io/repository/github/jim60105/docker-whisperx/badge?style=for-the-badge)](https://www.codefactor.io/repository/github/jim60105/docker-whisperx) ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/jim60105/docker-whisperX/docker_publish.yml?label=DOCKER%20BUILD&style=for-the-badge) [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/jim60105/docker-whisperX/scan.yml?label=IMAGE%20SCAN&style=for-the-badge)](https://github.com/jim60105/docker-whisperX/actions/workflows/scan.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/kairntech/docker-whisperx/badge?style=for-the-badge)](https://www.codefactor.io/repository/github/kairntech/docker-whisperx) ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/kairntech/docker-whisperX/docker_publish.yml?label=DOCKER%20BUILD&style=for-the-badge) [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/kairntech/docker-whisperX/scan.yml?label=IMAGE%20SCAN&style=for-the-badge)](https://github.com/kairntech/docker-whisperX/actions/workflows/scan.yml)
 
 This is the docker image for [WhisperX: Automatic Speech Recognition with Word-Level Timestamps (and Speaker Diarization)](https://github.com/m-bain/whisperX) from the community.
 
-Get the Dockerfile at [GitHub](https://github.com/jim60105/docker-whisperX), or pull the image from [ghcr.io](https://ghcr.io/jim60105/whisperx).
 
 ## Get your Docker ready for GPU support
 
@@ -26,22 +25,22 @@ Install the NVIDIA Container Toolkit with this guide.
 
 ## Available Pre-built Image
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/jim60105/docker-whisperX/docker_publish.yml?label=DOCKER%20BUILD&style=for-the-badge) ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/jim60105/docker-whisperX/master?label=DATE&style=for-the-badge)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/kairntech/docker-whisperX/docker_publish.yml?label=DOCKER%20BUILD&style=for-the-badge) ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/kairntech/docker-whisperX/master?label=DATE&style=for-the-badge)
 
 > [!NOTE]  
 > The WhisperX code base in these images aligns with the git submodule commit hash.  
-> I have [a scheduled CI workflow](https://github.com/jim60105/docker-whisperX/actions/workflows/submodule_update.yml) runs weekly to target on [the main branch](https://github.com/m-bain/whisperX/tree/main) and rebuild all docker images.
+> I have [a scheduled CI workflow](https://github.com/kairntech/docker-whisperX/actions/workflows/submodule_update.yml) runs weekly to target on [the main branch](https://github.com/m-bain/whisperX/tree/main) and rebuild all docker images.
 
 ```bash
-docker run --gpus all -it -v ".:/app" ghcr.io/jim60105/whisperx:base-en     -- --output_format srt audio.mp3
-docker run --gpus all -it -v ".:/app" ghcr.io/jim60105/whisperx:large-v3-ja -- --output_format srt audio.mp3
-docker run --gpus all -it -v ".:/app" ghcr.io/jim60105/whisperx:no_model    -- --model tiny --language en --output_format srt audio.mp3
+docker run --gpus all -it -v ".:/app" kairntech/whisperx:base-en     -- --output_format srt audio.mp3
+docker run --gpus all -it -v ".:/app" kairntech/whisperx:large-v3-ja -- --output_format srt audio.mp3
+docker run --gpus all -it -v ".:/app" kairntech/whisperx:no_model    -- --model tiny --language en --output_format srt audio.mp3
 ```
 
 The image tags are formatted as `WHISPER_MODEL`-`LANG`, for example, `tiny-en`, `base-de`, or `large-v3-zh`.  
 Please be aware that the whisper models `*.en` and `large-v1` have been excluded as I believe they are not frequently used. If you require these models, please refer to the following section to build them on your own.
 
-You can find all available tags at [ghcr.io](https://github.com/jim60105/docker-whisperX/pkgs/container/whisperx/versions?filters%5Bversion_type%5D=tagged).
+You can find all available tags at [dockerhub](https://hub.docker.com/repository/docker/kairntech/whisperx/general).
 
 In addition, there is also a `no_model` tag that does not include any pre-downloaded models, also referred to as `latest`.
 
@@ -51,20 +50,20 @@ You can mount the `/.cache` to share align models between containers.
 Please use tag `no_model` (`latest`) for this scenario.
 
 ```bash
-docker run --gpus all -it -v ".:/app" -v whisper_cache:/.cache ghcr.io/jim60105/whisperx:latest -- --model large-v3 --language en --output_format srt audio.mp3
+docker run --gpus all -it -v ".:/app" -v whisper_cache:/.cache kairntech/whisperx:latest -- --model large-v3 --language en --output_format srt audio.mp3
 ```
 
 ## Building the Docker Image
 
 > [!IMPORTANT]  
 > Clone the Git repository recursively to include submodules:  
-> `git clone --recursive https://github.com/jim60105/docker-whisperX.git`
+> `git clone --recursive https://github.com/kairntech/docker-whisperX.git`
 
 ### Build Arguments
 
 The [Dockerfile](Dockerfile) builds the image contained models. It accepts two build arguments: `LANG` and `WHISPER_MODEL`.
 
-- `LANG`: The language to transcribe. The default is `en`. See [here](https://github.com/jim60105/docker-whisperX/blob/master/load_align_model.py) for supported languages.
+- `LANG`: The language to transcribe. The default is `en`. See [here](https://github.com/kairntech/docker-whisperX/blob/master/load_align_model.py) for supported languages.
 - `WHISPER_MODEL`: The model name. The default is `base`. See [fast-whisper](https://huggingface.co/Systran) for supported models.
 
 In case of multiple language alignments needed, use space separated list of languages `"LANG=pl fr en"` when building the image. Also note that WhisperX is not doing well to handle multiple languages within the same audio file. Even if you do not provide the language parameter, it will still recognize the language (or fallback to en) and use it for choosing the alignment model. Alignment models are language specific. **This instruction is simply for embedding multiple alignment models into a docker image.**
@@ -124,7 +123,7 @@ Please refer to [the latest vulnerability scan report](https://github.com/jim601
 You can get the pre-built image at tag `ubi-no_model`. Notice that only `no_model` is available. Feel free to build your own image with the [ubi.Dockerfile](ubi.Dockerfile) for your needs. This Dockerfile supports the same build arguments as the default one.
 
 ```bash
-docker run --gpus all -it -v ".:/app" ghcr.io/jim60105/whisperx:ubi-no_model -- --model tiny --language en --output_format srt audio.mp3
+docker run --gpus all -it -v ".:/app" kairntech/whisperx:ubi-no_model -- --model tiny --language en --output_format srt audio.mp3
 ```
 
 > [!WARNING]
