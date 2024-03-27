@@ -122,8 +122,8 @@ def task(options: InputOptions):
             logger.info(f"Duration to transcribe audio: {elapsed_time:.2f} ms")
 
             if options.align_output:
-                if detected_language in whisperx.alignment.DEFAULT_ALIGN_MODELS_TORCH or detected_language in whisperx.alignment.DEFAULT_ALIGN_MODELS_HF:
-                    result = align(audio, result)
+                if detected_language in app.alignment_model:
+                    result = align(audio, detected_language, result)
                 else:
                     logger.warning(
                         f"Cannot align output as language {detected_language} is not supported for alignment")
@@ -165,9 +165,9 @@ def group_speakers(result):
     return result
 
 
-def align(audio, result):
+def align(audio, language, result):
     start_time = time.time_ns() / 1e6
-    result = whisperx.align(result["segments"], app.alignment_model, app.alignment_metadata, audio,
+    result = whisperx.align(result["segments"], app.alignment_model[language], app.alignment_metadata[language], audio,
                             device,
                             return_char_alignments=False)
 
@@ -226,6 +226,7 @@ async def status_handler(uid: UUID):
 
 @app.on_event("startup")
 async def startup_event():
+    langs = os.getenv("LANG", "fr").split()
     # app.state.executor = ProcessPoolExecutor()
     app.state.executor = ThreadPoolExecutor()
     asr_options = {
@@ -237,15 +238,17 @@ async def startup_event():
         "vad_onset": float(os.getenv("VAD_ONSET", "0.500")),
         "vad_offset": float(os.getenv("VAD_OFFSET", "0.363"))
     }
-    debug = str2bool(os.getenv("DEBUG", "false"))
-    if not debug:
-        app.model = whisperx.load_model(os.getenv("WHISPER_MODEL", "tiny"), device,
-                                        language=os.getenv("LANG", "fr"), compute_type=compute_type,
-                                        asr_options=asr_options, vad_options=vad_options)
-        app.alignment_model, app.alignment_metadata = whisperx.load_align_model(language_code=os.getenv("LANG", "fr"),
+
+    app.model = whisperx.load_model(os.getenv("WHISPER_MODEL", "tiny"), device,
+                                    language=os.getenv("LANG", "fr"), compute_type=compute_type,
+                                    asr_options=asr_options, vad_options=vad_options)
+    app.alignment_model = {}
+    app.alignment_metadata = {}
+    for lang in langs:
+        app.alignment_model[lang], app.alignment_metadata[lang] = whisperx.load_align_model(language_code=os.getenv("LANG", "fr"),
                                                                                 device=device)
-        app.diarize_model = DiarizationWithEmbeddingsPipeline(model_name='pyannote/speaker-diarization-3.1',
-                                                              use_auth_token=os.getenv("HF_TOKEN"), device=device)
+    app.diarize_model = DiarizationWithEmbeddingsPipeline(model_name='pyannote/speaker-diarization-3.1',
+                                                          use_auth_token=os.getenv("HF_TOKEN"), device=device)
 
 
 @app.on_event("shutdown")
