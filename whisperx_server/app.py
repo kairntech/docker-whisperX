@@ -66,7 +66,8 @@ class Output(BaseModel):
     segments: Any | None = None
     embeddings: Any | None = None
     detected_language: str | None = None
-
+    start_time: float | None = None
+    elapsed_time: float | None = None
 
 class JobStatus(str, Enum):
     STARTED = 'STARTED'
@@ -98,7 +99,7 @@ def str2bool(v):
 def task(options: InputOptions):
     debug = str2bool(os.getenv("DEBUG", "false"))
     logger.info(f"Task starting: {options.audio_url}")
-    output = Output()
+    output = Output(start_time=time.time_ns() / 1e6)
     if debug:
         time.sleep(5)
         logger.info("Task done")
@@ -140,6 +141,7 @@ def task(options: InputOptions):
         for segment in segments:
             segment.pop("words", None)
     logger.info("Task done")
+    output.elapsed_time = time.time_ns() / 1e6 - output.start_time
     output.segments = result["segments"]
     output.embeddings = result.get("embeddings", None)
     output.detected_language = detected_language
