@@ -120,11 +120,7 @@ def task(options: InputOptions):
                 new_options = faster_whisper.transcribe.TranscriptionOptions(**new_asr_options)
                 app.model.options = new_options
             audio = whisperx.load_audio(str(options.audio_url))
-            if options.language is not None:
-                language = options.language if options.language != 'xx' else None
-            else:
-                language = options.language
-            result = app.model.transcribe(audio, task="transcribe", language=language, batch_size=options.batch_size)
+            result = app.model.transcribe(audio, task="transcribe", language=options.language, batch_size=options.batch_size)
             detected_language = result["language"]
             elapsed_time = time.time_ns() / 1e6 - start_time
             logger.info(f"Duration to transcribe audio: {elapsed_time:.2f} ms")
