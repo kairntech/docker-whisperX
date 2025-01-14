@@ -78,6 +78,11 @@ RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/r
 # Test whisperX
 RUN python3 -c 'import whisperx;'
 
+# Install server
+RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
+    --mount=source=whisperx_server/requirements.txt,target=requirements.txt,rw \
+    pip install -r requirements.txt \
+
 ########################################
 # Final stage for no_model
 ########################################
@@ -87,8 +92,8 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 # We don't need them anymore
-RUN pip3.11 uninstall -y pip wheel && \
-    rm -rf /root/.cache/pip
+#RUN pip3.11 uninstall -y pip wheel && \
+#    rm -rf /root/.cache/pip
 
 # Create user
 ARG UID
@@ -99,6 +104,7 @@ ARG CACHE_HOME
 ARG CONFIG_HOME
 ARG TORCH_HOME
 ARG HF_HOME
+ENV CACHE_HOME=${CACHE_HOME}
 ENV XDG_CACHE_HOME=${CACHE_HOME}
 ENV TORCH_HOME=${TORCH_HOME}
 ENV HF_HOME=${HF_HOME}
@@ -129,12 +135,12 @@ ENV PYTHONPATH="/home/$UID/.local/lib/python3.11/site-packages"
 WORKDIR /app
 
 VOLUME [ "/app" ]
-
+COPY . /app
 USER $UID
 
 STOPSIGNAL SIGINT
 
-ENTRYPOINT [ "dumb-init", "--", "/bin/sh", "-c", "whisperx \"$@\"" ]
+# ENTRYPOINT [ "dumb-init", "--", "/bin/sh", "-c", "whisperx \"$@\"" ]
 
 ARG VERSION
 ARG RELEASE
@@ -208,7 +214,8 @@ ARG WHISPER_MODEL
 ENV WHISPER_MODEL=${WHISPER_MODEL}
 
 # Take the first language from LANG env variable
-ENTRYPOINT [ "dumb-init", "--", "/bin/sh", "-c", "LANG=$(echo ${LANG} | cut -d ' ' -f1); whisperx --model \"${WHISPER_MODEL}\" --language \"${LANG}\" \"$@\"" ]
+#ENTRYPOINT [ "dumb-init", "--", "/bin/sh", "-c", "LANG=$(echo ${LANG} | cut -d ' ' -f1); whisperx --model \"${WHISPER_MODEL}\" --language \"${LANG}\" \"$@\"" ]
+CMD python3 whisperx_server/app.py
 
 ARG VERSION
 ARG RELEASE
