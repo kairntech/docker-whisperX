@@ -81,7 +81,7 @@ RUN python3 -c 'import whisperx;'
 # Install server
 RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
     --mount=source=whisperx_server/requirements.txt,target=requirements.txt,rw \
-    pip install -r requirements.txt \
+    pip install -r requirements.txt
 
 ########################################
 # Final stage for no_model
@@ -126,7 +126,7 @@ COPY --link --chown=$UID:0 --chmod=775 whisperX/LICENSE /licenses/whisperX.LICEN
 
 # Copy dependencies and code (and support arbitrary uid for OpenShift best practice)
 # https://docs.openshift.com/container-platform/4.14/openshift_images/create-images.html#use-uid_create-images
-COPY --link --chown=$UID:0 --chmod=775 /root/.local /home/$UID/.local
+COPY --link --chown=$UID:0 --chmod=775 --from=build /root/.local /home/$UID/.local
 
 ENV PATH="/home/$UID/.local/bin:$PATH"
 ENV PYTHONPATH="/home/$UID/.local/lib/python3.11/site-packages"
