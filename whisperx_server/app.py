@@ -240,12 +240,13 @@ async def startup_event():
     }
 
     vad_options = {
+        "chunk_size": 30,  #
         "vad_onset": float(os.getenv("VAD_ONSET", "0.500")),
         "vad_offset": float(os.getenv("VAD_OFFSET", "0.363"))
     }
 
     app.model = whisperx.load_model(os.getenv("WHISPER_MODEL", "tiny"), device,
-                                    language=os.getenv("LANG", "fr"), compute_type=compute_type,
+                                    language=os.getenv("LANG", "fr"), compute_type=compute_type, vad_method="silero",
                                     asr_options=asr_options, vad_options=vad_options)
     app.alignment_model = {}
     app.alignment_metadata = {}
