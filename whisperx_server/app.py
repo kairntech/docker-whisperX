@@ -9,7 +9,7 @@ from itertools import groupby
 from pathlib import Path
 from typing import Dict, Any, Annotated
 from uuid import UUID, uuid4
-
+from dataclasses import asdict
 import faster_whisper
 import torch
 import uvicorn
@@ -110,7 +110,7 @@ def task(options: InputOptions):
     else:
         with torch.inference_mode():
             start_time = time.time_ns() / 1e6
-            new_asr_options = app.model.options.asdict()
+            new_asr_options = asdict(app.model.options)
             if (options.initial_prompt and new_asr_options[
                 "initial_prompt"] != options.initial_prompt) or options.temperature not in \
                     new_asr_options[
