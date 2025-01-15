@@ -130,6 +130,7 @@ COPY --link --chown=$UID:0 --chmod=775 --from=build /root/.local /home/$UID/.loc
 
 ENV PATH="/home/$UID/.local/bin:$PATH"
 ENV PYTHONPATH="/home/$UID/.local/lib/python3.11/site-packages"
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/$UID/.local/lib/python3.11/site-packages/nvidia/cublas/lib:/home/$UID/.local/lib/python3.11/site-packages/nvidia/cudnn/lib
 
 WORKDIR /app
 
