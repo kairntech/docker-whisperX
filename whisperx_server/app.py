@@ -110,7 +110,7 @@ def task(options: InputOptions):
     else:
         with torch.inference_mode():
             start_time = time.time_ns() / 1e6
-            new_asr_options = app.model.options._asdict()
+            new_asr_options = app.model.options.asdict()
             if (options.initial_prompt and new_asr_options[
                 "initial_prompt"] != options.initial_prompt) or options.temperature not in \
                     new_asr_options[
